@@ -7,6 +7,10 @@
 	margin: 0;
 }
 
+h1
+{
+	font-size: 72px
+}
 
 /* ------------ Body styles ------------ */
 
@@ -101,8 +105,7 @@ body {
 }
 
 #nodelogo {
-	width: 410px;
-	height: 410px;
+	height: 90px;
 	margin-bottom: 35px;
 }
 
