@@ -1,87 +1,25 @@
-/**
- * Module dependencies.
- */
+// This is the main file of our chat app. It initializes a new 
+// express.js instance, requires the config and routes files
+// and listens on a port. Start the application by running
+// 'node app.js' in your terminal
 
-var express = require('express')
-  , stylus = require('stylus')
-  , nib = require('nib')
-  , sio = require('socket.io');
 
-/**
- * App.
- */
+var express = require('express'),
+	app = express();
 
-var app = express.createServer();
+// This is needed if the app is run on heroku:
 
-/**
- * App configuration.
- */
+var port = process.env.PORT || 8080;
 
-app.configure(function () {
-  app.use(stylus.middleware({ src: __dirname + '/public', compile: compile }));
-  app.use(express.static(__dirname + '/public'));
-  app.set('views', __dirname);
-  app.set('view engine', 'jade');
+// Initialize a new socket.io object. It is bound to 
+// the express app, which allows them to coexist.
 
-  function compile (str, path) {
-    return stylus(str)
-      .set('filename', path)
-      .use(nib());
-  };
-});
+var io = require('socket.io').listen(app.listen(port));
 
-/**
- * App routes.
- */
+// Require the configuration and the routes files, and pass
+// the app and io as arguments to the returned functions.
 
-app.get('/', function (req, res) {
-  res.render('index', { layout: false });
-});
+require('./config')(app, io);
+require('./routes')(app, io);
 
-/**
- * App listen.
- */
-
-var port = process.env.PORT || 3000;
-app.listen(port, function () {
-  var addr = app.address();
-  console.log('   app listening on http://' + addr.address + ':' + addr.port);
-});
-
-/**
- * Socket.IO server (single process only)
- */
-
-var io = sio.listen(app)
-  , nicknames = {};
-
-// Set our transports
-io.configure(function () { 
-  io.set("transports", ["xhr-polling"]); 
-  io.set("polling duration", 20); 
-});
-
-io.sockets.on('connection', function (socket) {
-  socket.on('user message', function (msg) {
-    socket.broadcast.emit('user message', socket.nickname, msg);
-  });
-
-  socket.on('nickname', function (nick, fn) {
-    if (nicknames[nick]) {
-      fn(true);
-    } else {
-      fn(false);
-      nicknames[nick] = socket.nickname = nick;
-      socket.broadcast.emit('announcement', nick + ' connected');
-      io.sockets.emit('nicknames', nicknames);
-    }
-  });
-
-  socket.on('disconnect', function () {
-    if (!socket.nickname) return;
-
-    delete nicknames[socket.nickname];
-    socket.broadcast.emit('announcement', socket.nickname + ' disconnected');
-    socket.broadcast.emit('nicknames', nicknames);
-  });
-});
+console.log('Your application is running on http://localhost:' + port);
